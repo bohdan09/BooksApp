@@ -1,7 +1,7 @@
 package com.books.app.presentation.screens.main
 
-import com.books.app.domain.model.Book
 import com.books.app.domain.model.BookAndGenre
+import com.books.app.domain.model.TopBannerSlide
 import com.books.app.domain.usecase.GetBannersUseCase
 import com.books.app.domain.usecase.GetBooksUseCase
 import com.books.app.presentation.base.BaseViewModel
@@ -19,7 +19,8 @@ class MainScreenViewModel(
     private val _booksState: MutableStateFlow<List<BookAndGenre>> = MutableStateFlow(emptyList())
     val booksState = _booksState.asStateFlow()
 
-    private val _bannersState: MutableStateFlow<List<Book>> = MutableStateFlow(emptyList())
+    private val _bannersState: MutableStateFlow<List<TopBannerSlide>> =
+        MutableStateFlow(emptyList())
     val bannersState = _bannersState.asStateFlow()
 
     init {
@@ -38,7 +39,9 @@ class MainScreenViewModel(
     private fun getBanners() {
         launch(ioContext) {
             getBannersUseCase.getBanners().collectLatest {
-                _bannersState.emit(it)
+                bannersState.value.ifEmpty {
+                    _bannersState.emit(it)
+                }
             }
         }
     }

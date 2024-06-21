@@ -2,7 +2,7 @@ package com.books.app.data.repository
 
 import com.books.app.domain.model.Book
 import com.books.app.domain.model.BookAndGenre
-import com.books.app.domain.model.Books
+import com.books.app.domain.model.BooksInfo
 import com.books.app.domain.repository.GetBooksRepository
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.gson.Gson
@@ -16,7 +16,7 @@ class GetBooksDataRepository(
 
     override fun getBooks(): Flow<List<BookAndGenre>> {
         val json = firebaseRemoteConfig.getString("json_data")
-        val book = gson.fromJson(json, Books::class.java)
+        val book = gson.fromJson(json, BooksInfo::class.java)
         val genres = book.books.map { it.genre }
         val booksAndGenres = mutableSetOf<BookAndGenre>()
 
@@ -33,7 +33,7 @@ class GetBooksDataRepository(
 
     override fun getBooksByGenre(genre: String): Flow<List<Book>> {
         val json = firebaseRemoteConfig.getString("json_data")
-        val book = gson.fromJson(json, Books::class.java)
+        val book = gson.fromJson(json, BooksInfo::class.java)
         val genres = book.books.map { it.genre }
         val booksAndGenres = mutableSetOf<BookAndGenre>()
 
@@ -47,5 +47,13 @@ class GetBooksDataRepository(
         }
 
         return flowOf(booksAndGenres.find { it.genre == genre }?.books ?: emptyList())
+    }
+
+    override fun getBooksByBookId(bookId: String): Flow<Book> {
+        val json = firebaseRemoteConfig.getString("json_data")
+        val booksInfo = gson.fromJson(json, BooksInfo::class.java)
+        val book =
+            booksInfo.books.find { book: Book -> book.id.toString() == bookId } ?: Book.default()
+        return flowOf(book)
     }
 }

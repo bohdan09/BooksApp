@@ -21,7 +21,9 @@ class DetailsScreenViewModel(
     val selectedBookState = _selectedBookState.asStateFlow()
 
     init {
-        getBooksByGenre(genre)
+        if (genre == "default") {
+            setSelectedBook(bookId)
+        } else getBooksByGenre(genre)
     }
 
     private fun getBooksByGenre(genre: String) {
@@ -35,10 +37,11 @@ class DetailsScreenViewModel(
 
     fun setSelectedBook(bookId: String) {
         launch(ioContext) {
-            val selectedBook = booksState.value.find { book: Book ->
-                book.id.toString() == bookId
-            } ?: Book.default()
-            _selectedBookState.emit(selectedBook)
+            getBooksUseCase.getBooksByBookId(bookId).collectLatest { book: Book ->
+                if (genre == "default") _booksState.emit(listOf(book))
+                _selectedBookState.emit(book)
+            }
+
         }
     }
 }

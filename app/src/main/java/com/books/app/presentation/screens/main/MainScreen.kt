@@ -54,6 +54,7 @@ import coil.compose.AsyncImage
 import com.books.app.R
 import com.books.app.domain.model.Book
 import com.books.app.domain.model.BookAndGenre
+import com.books.app.domain.model.TopBannerSlide
 import com.books.app.presentation.commoncomponents.ShimmerBrush
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
@@ -106,7 +107,7 @@ private fun TopBar() = Box {
 private fun MainScreenContent(
     modifier: Modifier,
     books: List<BookAndGenre>,
-    banners: List<Book>,
+    banners: List<TopBannerSlide>,
     openDetailsScreen: (genre: String, bookId: String) -> Unit,
 ) =
     LazyColumn(
@@ -115,7 +116,7 @@ private fun MainScreenContent(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
-            BannerCarousel(banners = banners)
+            BannerCarousel(banners = banners, openDetailsScreen = openDetailsScreen)
         }
 
         items(books) { book ->
@@ -208,77 +209,103 @@ private fun MoviesGenres(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun BannerCarousel(banners: List<Book>) = Box(
-    modifier = Modifier
-        .fillMaxWidth()
-        .padding(
-            bottom = 16.dp
-        )
+fun BannerCarousel(
+    banners: List<TopBannerSlide>,
+    openDetailsScreen: (genre: String, bookId: String) -> Unit,
 ) {
     var initialPage by remember {
+        mutableIntStateOf(0)
+    }
+    var currentBannerIndex by remember {
         mutableIntStateOf(0)
     }
     val pagerState = rememberPagerState(initialPage = initialPage) { 20_000 }
     val pageCountRange = 9000..11000
 
-    if (banners.isNotEmpty()) {
-        LaunchedEffect(Unit) {
-            pageCountRange.forEach {
-                if (it % banners.size == 0) {
-                    initialPage = it
-                    pagerState.scrollToPage(it)
-                    return@LaunchedEffect
-                }
+    LaunchedEffect(key1 = pagerState.currentPage) {
+        if (banners.isNotEmpty()) {
+            banners.getOrNull(
+                pagerState.currentPage % banners.size
+            )?.let { banner ->
+                currentBannerIndex = banners.indexOf(banner)
             }
         }
+    }
 
-        LaunchedEffect(pagerState.isScrollInProgress) {
-            if (!pagerState.isScrollInProgress) {
-                while (true) {
-                    delay(3000)
-                    pagerState.scrollToPage(
-                        pagerState.currentPage + 1
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                bottom = 16.dp
+            )
+    ) {
+        if (banners.isNotEmpty()) {
+            LaunchedEffect(Unit) {
+                pageCountRange.forEach {
+                    if (it % banners.size == 0) {
+                        initialPage = it
+                        pagerState.scrollToPage(it)
+                        return@LaunchedEffect
+                    }
+                }
+            }
+
+            LaunchedEffect(pagerState.isScrollInProgress) {
+                if (!pagerState.isScrollInProgress) {
+                    while (true) {
+                        delay(3000)
+                        pagerState.scrollToPage(
+                            pagerState.currentPage + 1
+                        )
+                    }
+                }
+            }
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .padding(horizontal = 16.dp)
+                    .clickable {
+                        openDetailsScreen(
+                            "",
+                            banners[currentBannerIndex].book_id.toString()
+                        )
+                    },
+            ) { page ->
+                banners.getOrNull(
+                    page % banners.size
+                )?.let { item ->
+                    AsyncImage(
+                        model = item.cover,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(167.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                brush = ShimmerBrush(
+                                    targetValue = 1300f,
+                                    showShimmer = true
+                                )
+                            ),
+                        contentScale = ContentScale.Crop,
+                        contentDescription = null
                     )
                 }
             }
-        }
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .wrapContentWidth()
-                .padding(horizontal = 16.dp),
-        ) { page ->
-            banners.getOrNull(
-                page % banners.size
-            )?.let { item ->
-                AsyncImage(
-                    model = item.cover_url,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(167.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(brush = ShimmerBrush(targetValue = 1300f, showShimmer = true)),
-                    contentScale = ContentScale.Crop,
-                    contentDescription = null
-                )
-            }
-        }
+            Row(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .wrapContentHeight()
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
 
-        Row(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .wrapContentHeight()
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            banners.getOrNull(
-                pagerState.currentPage % banners.size
-            )?.let { item ->
                 repeat(banners.size) { iteration ->
                     val color =
-                        if (banners.indexOf(item) == iteration) Color(0xffD0006E) else Color(
+                        if (currentBannerIndex == iteration) Color(0xffD0006E) else Color(
                             0xffC1C2CA
                         )
                     Box(

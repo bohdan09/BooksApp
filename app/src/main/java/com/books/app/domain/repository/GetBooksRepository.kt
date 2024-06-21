@@ -9,4 +9,6 @@ interface GetBooksRepository {
     fun getBooks(): Flow<List<BookAndGenre>>
 
     fun getBooksByGenre(genre: String): Flow<List<Book>>
+
+    fun getBooksByBookId(bookId: String): Flow<Book>
 }
