@@ -1,6 +1,8 @@
 package com.books.app.presentation.screens.main
 
+import com.books.app.domain.model.Book
 import com.books.app.domain.model.BookAndGenre
+import com.books.app.domain.usecase.GetBannersUseCase
 import com.books.app.domain.usecase.GetBooksUseCase
 import com.books.app.presentation.base.BaseViewModel
 import com.books.app.presentation.utils.coroutines.CoroutineContextProvider
@@ -11,19 +13,32 @@ import kotlinx.coroutines.flow.collectLatest
 class MainScreenViewModel(
     coroutineContextProvider: CoroutineContextProvider,
     private val getBooksUseCase: GetBooksUseCase,
+    private val getBannersUseCase: GetBannersUseCase,
 ) : BaseViewModel(coroutineContextProvider) {
 
     private val _booksState: MutableStateFlow<List<BookAndGenre>> = MutableStateFlow(emptyList())
     val booksState = _booksState.asStateFlow()
 
+    private val _bannersState: MutableStateFlow<List<Book>> = MutableStateFlow(emptyList())
+    val bannersState = _bannersState.asStateFlow()
+
     init {
         getBooks()
+        getBanners()
     }
 
     private fun getBooks() {
         launch(ioContext) {
             getBooksUseCase.getBooks().collectLatest {
                 _booksState.emit(it)
+            }
+        }
+    }
+
+    private fun getBanners() {
+        launch(ioContext) {
+            getBannersUseCase.getBanners().collectLatest {
+                _bannersState.emit(it)
             }
         }
     }

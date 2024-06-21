@@ -72,9 +72,11 @@ fun MainScreen(
         val viewModel: MainScreenViewModel = koinViewModel()
 
         val book by viewModel.booksState.collectAsStateWithLifecycle()
+        val banners by viewModel.bannersState.collectAsStateWithLifecycle()
         MainScreenContent(
             modifier = Modifier.padding(it),
             books = book,
+            banners = banners,
             openDetailsScreen = openDetailsScreen
         )
     }
@@ -104,6 +106,7 @@ private fun TopBar() = Box {
 private fun MainScreenContent(
     modifier: Modifier,
     books: List<BookAndGenre>,
+    banners: List<Book>,
     openDetailsScreen: (genre: String, bookId: String) -> Unit,
 ) =
     LazyColumn(
@@ -112,7 +115,7 @@ private fun MainScreenContent(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
-            BannerCarousel()
+            BannerCarousel(banners = banners)
         }
 
         items(books) { book ->
@@ -205,93 +208,87 @@ private fun MoviesGenres(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun BannerCarousel() = Box(
+fun BannerCarousel(banners: List<Book>) = Box(
     modifier = Modifier
         .fillMaxWidth()
         .padding(
             bottom = 16.dp
         )
 ) {
-    val list = mutableListOf(
-        "https://cdn4.iconfinder.com/data/icons/food-icons/apple.png",
-        "https://www.applepietrail.ca/wp-content/uploads/2020/08/ginger_gold.png",
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7pSbOQ__60e6tJXlwA1fwe34ai08FNM-K1A&s",
-        "https://pbs.twimg.com/media/C-PsWvqV0AAthJp.jpg"
-    )
-
     var initialPage by remember {
         mutableIntStateOf(0)
     }
     val pagerState = rememberPagerState(initialPage = initialPage) { 20_000 }
     val pageCountRange = 9000..11000
 
-    LaunchedEffect(Unit) {
-        pageCountRange.forEach {
-            if (it % list.size == 0) {
-                initialPage = it
-                pagerState.scrollToPage(it)
-                return@LaunchedEffect
+    if (banners.isNotEmpty()) {
+        LaunchedEffect(Unit) {
+            pageCountRange.forEach {
+                if (it % banners.size == 0) {
+                    initialPage = it
+                    pagerState.scrollToPage(it)
+                    return@LaunchedEffect
+                }
             }
         }
-    }
 
-
-    LaunchedEffect(pagerState.isScrollInProgress) {
-        if (!pagerState.isScrollInProgress) {
-            while (true) {
-                delay(3000)
-                pagerState.scrollToPage(
-                    pagerState.currentPage + 1
-                )
+        LaunchedEffect(pagerState.isScrollInProgress) {
+            if (!pagerState.isScrollInProgress) {
+                while (true) {
+                    delay(3000)
+                    pagerState.scrollToPage(
+                        pagerState.currentPage + 1
+                    )
+                }
             }
         }
-    }
 
-
-
-    HorizontalPager(
-        state = pagerState,
-        modifier = Modifier
-            .wrapContentWidth()
-            .padding(horizontal = 16.dp),
-    ) { page ->
-        list.getOrNull(
-            page % list.size
-        )?.let { item ->
-            AsyncImage(
-                model = item,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(167.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(brush = ShimmerBrush(targetValue = 1300f, showShimmer = true)),
-                contentScale = ContentScale.Crop,
-                contentDescription = null
-            )
-        }
-    }
-
-    Row(
-        Modifier
-            .align(Alignment.BottomCenter)
-            .wrapContentHeight()
-            .fillMaxWidth()
-            .padding(bottom = 8.dp),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        list.getOrNull(
-            pagerState.currentPage % list.size
-        )?.let { item ->
-            repeat(list.size) { iteration ->
-                val color =
-                    if (list.indexOf(item) == iteration) Color(0xffD0006E) else Color(0xffC1C2CA)
-                Box(
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .wrapContentWidth()
+                .padding(horizontal = 16.dp),
+        ) { page ->
+            banners.getOrNull(
+                page % banners.size
+            )?.let { item ->
+                AsyncImage(
+                    model = item.cover_url,
                     modifier = Modifier
-                        .padding(horizontal = 6.dp)
-                        .clip(CircleShape)
-                        .background(color)
-                        .size(7.dp)
+                        .fillMaxWidth()
+                        .height(167.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(brush = ShimmerBrush(targetValue = 1300f, showShimmer = true)),
+                    contentScale = ContentScale.Crop,
+                    contentDescription = null
                 )
+            }
+        }
+
+        Row(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .wrapContentHeight()
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            banners.getOrNull(
+                pagerState.currentPage % banners.size
+            )?.let { item ->
+                repeat(banners.size) { iteration ->
+                    val color =
+                        if (banners.indexOf(item) == iteration) Color(0xffD0006E) else Color(
+                            0xffC1C2CA
+                        )
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 6.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .size(7.dp)
+                    )
+                }
             }
         }
     }

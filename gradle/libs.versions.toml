@@ -19,6 +19,8 @@ gson = "2.11.0"
 coil = "2.6.0"
 koin = "3.2.0"
 koinExt = "3.0.2"
+googleGmsGoogleServices = "4.4.2"
+firebaseConfig = "22.0.0"
 
 
 [libraries]
@@ -49,9 +51,11 @@ insert-koin-core = { group = "io.insert-koin", name = "koin-core", version.ref =
 insert-koin-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }
 insert-koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
 insert-koin-android-ext = { group = "io.insert-koin", name = "koin-android-ext", version.ref = "koinExt" }
+firebase-config = { group = "com.google.firebase", name = "firebase-config", version.ref = "firebaseConfig" }
 
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+googleGmsGoogleServices = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
 
