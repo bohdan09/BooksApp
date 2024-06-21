@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    id("kotlin-parcelize")
 }
 
 android {
@@ -58,7 +59,29 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.navigation)
+    implementation(libs.androidx.foundation)
+
+    // Material 3
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material3.adaptive)
+    implementation(libs.androidx.material3.window)
+
+    // Gson
+    implementation(libs.androidx.gson)
+
+    // Coil
+    implementation(libs.androidx.coil)
+
+    // Koin
+    implementation(libs.insert.koin.compose)
+    implementation(libs.insert.koin.core)
+    implementation(libs.insert.koin.android)
+    implementation(libs.insert.koin.android.ext)
+
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.androidx.lifecycle.runtime.compose.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
