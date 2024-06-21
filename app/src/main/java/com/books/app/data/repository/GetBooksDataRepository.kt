@@ -45,7 +45,6 @@ class GetBooksDataRepository(
             )
             booksAndGenres.add(bookAndGenre)
         }
-//        Log.d("kasdfmnkdm", (booksAndGenres.find { it.genre == genre }?.books ?: emptyList()).size.toString())
 
         return flowOf(booksAndGenres.find { it.genre == genre }?.books ?: emptyList())
     }

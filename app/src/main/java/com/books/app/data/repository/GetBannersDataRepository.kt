@@ -1,5 +1,6 @@
 package com.books.app.data.repository
 
+import android.util.Log
 import com.books.app.domain.model.Book
 import com.books.app.domain.model.banner.Banner
 import com.books.app.domain.repository.GetBannersRepository
@@ -15,6 +16,9 @@ class GetBannersDataRepository(
 
     override fun getBanners(): Flow<List<Book>> {
         val json = firebaseRemoteConfig.getString("json_data")
+        val template =
+            firebaseRemoteConfig.all.keys//("you_will_like_section")//.get("you_will_like_section")
+        Log.d("sdkjcnds", template.toString())
         val banner = gson.fromJson(json, Banner::class.java)
         return flowOf(banner.books)
 

@@ -1,6 +1,7 @@
 package com.books.app.presentation.screens.details
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -12,13 +13,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -30,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,11 +79,13 @@ fun DetailsScreen(
     val viewModel: DetailsScreenViewModel =
         koinViewModel(parameters = { parametersOf(bookId, genre) })
     val books by viewModel.booksState.collectAsStateWithLifecycle()
+    val selectedBook by viewModel.selectedBookState.collectAsStateWithLifecycle()
 
     Box(
         Modifier
             .fillMaxSize()
             .background(Color.White)
+            .navigationBarsPadding()
     ) {
         Image(
             modifier = Modifier
@@ -96,7 +100,12 @@ fun DetailsScreen(
             topBar = { TopBar(onBackClick = onBackClick) },
             containerColor = Color.Transparent
         ) {
-            DetailsScreenContent(Modifier.padding(it), books = books)
+            DetailsScreenContent(
+                modifier = Modifier.padding(it),
+                books = books,
+                selectedBook = selectedBook,
+                setSelectedBook = viewModel::setSelectedBook
+            )
         }
     }
 }
@@ -121,15 +130,26 @@ private fun TopBar(onBackClick: () -> Unit) = Box {
 fun DetailsScreenContent(
     modifier: Modifier = Modifier,
     books: List<Book>,
+    selectedBook: Book,
+    setSelectedBook: (bookId: String) -> Unit,
 ) =
     Column(modifier = modifier.fillMaxSize()) {
-        CarouselBlock(books = if (books.isNotEmpty()) books else emptyList())
-        InfoBlock(book = if (books.isNotEmpty()) books[0] else Book.default())
+        CarouselBlock(
+            books = if (books.isNotEmpty()) books else emptyList(),
+            selectedBook = selectedBook,
+            setSelectedBook = setSelectedBook
+        )
+        InfoBlock(book = selectedBook)
     }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CarouselBlock(modifier: Modifier = Modifier, books: List<Book>) =
+fun CarouselBlock(
+    modifier: Modifier = Modifier,
+    books: List<Book>,
+    selectedBook: Book,
+    setSelectedBook: (bookId: String) -> Unit,
+) =
     Box(modifier = modifier.wrapContentSize()) {
 
         if (books.isNotEmpty()) {
@@ -139,9 +159,15 @@ fun CarouselBlock(modifier: Modifier = Modifier, books: List<Book>) =
             val density = LocalDensity.current
             val pagerState = rememberPagerState(initialPage = 0) { books.size }
 
+            LaunchedEffect(key1 = selectedBook) {
+                pagerState.scrollToPage(books.indexOf(selectedBook))
+            }
+            LaunchedEffect(key1 = pagerState.currentPage) {
+                setSelectedBook(books[pagerState.currentPage].id.toString())
+            }
+
             HorizontalPager(
                 state = pagerState,
-                pageSize = PageSize.Fixed(200.dp),
                 contentPadding = PaddingValues(
                     start = (pagerWidth - pagerItemWidth) / 2,
                     end = (pagerWidth - pagerItemWidth) / 2,
@@ -280,8 +306,6 @@ fun InfoBlock(modifier: Modifier = Modifier, book: Book) = Column(
     }
 
     SummeryItem(summery = book.summary)
-
-
 }
 
 @Composable
@@ -293,6 +317,7 @@ private fun YouWillAlsoLikeItem(summery: String) = Column {
 private fun SummeryItem(summery: String) = Column(
     modifier = Modifier
         .fillMaxWidth()
+        .animateContentSize()
         .padding(
             horizontal = 16.dp,
         ),
@@ -343,7 +368,7 @@ private fun SummeryItem(summery: String) = Column(
 }
 
 @Composable
-private fun StatisticItem(title: String, statisticValue: String) =
+private fun StatisticItem(title: String, statisticValue: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -376,3 +401,4 @@ private fun StatisticItem(title: String, statisticValue: String) =
         )
 
     }
+}

@@ -17,6 +17,9 @@ class DetailsScreenViewModel(
     private val _booksState: MutableStateFlow<List<Book>> = MutableStateFlow(emptyList())
     val booksState = _booksState.asStateFlow()
 
+    private val _selectedBookState: MutableStateFlow<Book> = MutableStateFlow(Book.default())
+    val selectedBookState = _selectedBookState.asStateFlow()
+
     init {
         getBooksByGenre(genre)
     }
@@ -25,7 +28,17 @@ class DetailsScreenViewModel(
         launch(ioContext) {
             getBooksUseCase.getBooksByGenre(genre).collectLatest {
                 _booksState.emit(it)
+                setSelectedBook(bookId = bookId)
             }
+        }
+    }
+
+    fun setSelectedBook(bookId: String) {
+        launch(ioContext) {
+            val selectedBook = booksState.value.find { book: Book ->
+                book.id.toString() == bookId
+            } ?: Book.default()
+            _selectedBookState.emit(selectedBook)
         }
     }
 }
