@@ -2,10 +2,29 @@ package com.books.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.books.app.R
 
+val GeorgiaFamily = FontFamily(
+    Font(R.font.georgia, weight = FontWeight.Light),
+    Font(R.font.georgia, weight = FontWeight.Normal),
+    Font(R.font.georgia, weight = FontWeight.Medium),
+    Font(R.font.georgia, weight = FontWeight.SemiBold),
+    Font(R.font.georgia, weight = FontWeight.Bold),
+    Font(R.font.georgia, weight = FontWeight.ExtraBold),
+)
+
+val NunitoSansFamily = FontFamily(
+    Font(R.font.nunito_sans, weight = FontWeight.Light),
+    Font(R.font.nunito_sans, weight = FontWeight.Normal),
+    Font(R.font.nunito_sans, weight = FontWeight.Medium),
+    Font(R.font.nunito_sans, weight = FontWeight.SemiBold),
+    Font(R.font.nunito_sans, weight = FontWeight.Bold),
+    Font(R.font.nunito_sans, weight = FontWeight.ExtraBold),
+)
 // Set of Material typography styles to start with
 val Typography = Typography(
     bodyLarge = TextStyle(

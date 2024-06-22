@@ -2,8 +2,6 @@ package com.books.app.presentation.di
 
 import com.books.app.data.repository.GetBannersDataRepository
 import com.books.app.data.repository.GetBooksDataRepository
-import com.books.app.data.repository.RemoteConfigDataRepository
-import com.books.app.data.repository.RemoteConfigRepository
 import com.books.app.domain.repository.GetBannersRepository
 import com.books.app.domain.repository.GetBooksRepository
 import com.books.app.domain.usecase.GetBannersDataUseCase
@@ -17,12 +15,6 @@ internal val commonDataModule = module {
         GetBooksDataRepository(
             firebaseRemoteConfig = get(),
             gson = get()
-        )
-    }
-
-    factory<RemoteConfigRepository> {
-        RemoteConfigDataRepository(
-            firebaseRemoteConfig = get()
         )
     }
 

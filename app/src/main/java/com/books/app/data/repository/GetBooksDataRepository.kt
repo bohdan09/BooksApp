@@ -10,18 +10,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 class GetBooksDataRepository(
-    private val firebaseRemoteConfig: FirebaseRemoteConfig,
-    private val gson: Gson,
+    firebaseRemoteConfig: FirebaseRemoteConfig,
+    gson: Gson,
 ) : GetBooksRepository {
 
+    private val json = firebaseRemoteConfig.getString("json_data")
+    private val booksInfo = gson.fromJson(json, BooksInfo::class.java)
+
     override fun getBooks(): Flow<List<BookAndGenre>> {
-        val json = firebaseRemoteConfig.getString("json_data")
-        val book = gson.fromJson(json, BooksInfo::class.java)
-        val genres = book.books.map { it.genre }
+        val genres = booksInfo.books.map { it.genre }
         val booksAndGenres = mutableSetOf<BookAndGenre>()
 
         genres.forEach { genre ->
-            val books = book.books.filter { it.genre == genre }
+            val books = booksInfo.books.filter { it.genre == genre }
             val bookAndGenre = BookAndGenre(
                 genre = genre,
                 books = books
@@ -32,13 +33,11 @@ class GetBooksDataRepository(
     }
 
     override fun getBooksByGenre(genre: String): Flow<List<Book>> {
-        val json = firebaseRemoteConfig.getString("json_data")
-        val book = gson.fromJson(json, BooksInfo::class.java)
-        val genres = book.books.map { it.genre }
+        val genres = booksInfo.books.map { it.genre }
         val booksAndGenres = mutableSetOf<BookAndGenre>()
 
         genres.forEach { genreType ->
-            val books = book.books.filter { it.genre == genreType }
+            val books = booksInfo.books.filter { it.genre == genreType }
             val bookAndGenre = BookAndGenre(
                 genre = genreType,
                 books = books
@@ -49,11 +48,18 @@ class GetBooksDataRepository(
         return flowOf(booksAndGenres.find { it.genre == genre }?.books ?: emptyList())
     }
 
-    override fun getBooksByBookId(bookId: String): Flow<Book> {
-        val json = firebaseRemoteConfig.getString("json_data")
-        val booksInfo = gson.fromJson(json, BooksInfo::class.java)
+    override fun getBookByBookId(bookId: String): Flow<Book> {
         val book =
             booksInfo.books.find { book: Book -> book.id.toString() == bookId } ?: Book.default()
         return flowOf(book)
+    }
+
+    override fun getRecommendationBooks(): Flow<List<Book>> {
+        val recommendationBooks = mutableListOf<Book>()
+        booksInfo.you_will_like_section.forEach { id ->
+            recommendationBooks.add(booksInfo.books.find { book: Book -> book.id == id }
+                ?: Book.default())
+        }
+        return flowOf(recommendationBooks)
     }
 }

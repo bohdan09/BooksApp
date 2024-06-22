@@ -17,7 +17,11 @@ class GetBooksDataUseCase(
         return getBooksDataRepository.getBooksByGenre(genre)
     }
 
-    override fun getBooksByBookId(bookId: String): Flow<Book> {
-        return getBooksDataRepository.getBooksByBookId(bookId)
+    override fun getBookByBookId(bookId: String): Flow<Book> {
+        return getBooksDataRepository.getBookByBookId(bookId)
+    }
+
+    override fun getRecommendationBooks(): Flow<List<Book>> {
+        return getBooksDataRepository.getRecommendationBooks()
     }
 }

@@ -14,34 +14,56 @@ class DetailsScreenViewModel(
     private val bookId: String,
     private val genre: String,
 ) : BaseViewModel(coroutineContextProvider) {
-    private val _booksState: MutableStateFlow<List<Book>> = MutableStateFlow(emptyList())
-    val booksState = _booksState.asStateFlow()
+
+    private val _booksByGenreState: MutableStateFlow<List<Book>> = MutableStateFlow(emptyList())
+    val booksByGenreState = _booksByGenreState.asStateFlow()
+
+    private val _recommendationBooksState: MutableStateFlow<List<Book>> =
+        MutableStateFlow(emptyList())
+    val recommendationBooksState = _recommendationBooksState.asStateFlow()
 
     private val _selectedBookState: MutableStateFlow<Book> = MutableStateFlow(Book.default())
     val selectedBookState = _selectedBookState.asStateFlow()
 
     init {
+        getRecommendationBooksState()
         if (genre == "default") {
-            setSelectedBook(bookId)
+            getBookById(bookId)
         } else getBooksByGenre(genre)
+    }
+
+
+    fun setSelectedBook(bookId: String) {
+        launch(ioContext) {
+            getBooksUseCase.getBookByBookId(bookId).collectLatest { book: Book ->
+                _selectedBookState.emit(book)
+            }
+        }
+    }
+
+    private fun getBookById(bookId: String) {
+        launch(ioContext) {
+            getBooksUseCase.getBookByBookId(bookId).collectLatest { book: Book ->
+                getBooksByGenre(genre = book.genre)
+                _selectedBookState.emit(book)
+            }
+        }
     }
 
     private fun getBooksByGenre(genre: String) {
         launch(ioContext) {
             getBooksUseCase.getBooksByGenre(genre).collectLatest {
-                _booksState.emit(it)
+                _booksByGenreState.emit(it)
                 setSelectedBook(bookId = bookId)
             }
         }
     }
 
-    fun setSelectedBook(bookId: String) {
+    private fun getRecommendationBooksState() {
         launch(ioContext) {
-            getBooksUseCase.getBooksByBookId(bookId).collectLatest { book: Book ->
-                if (genre == "default") _booksState.emit(listOf(book))
-                _selectedBookState.emit(book)
+            getBooksUseCase.getRecommendationBooks().collectLatest {
+                _recommendationBooksState.emit(it)
             }
-
         }
     }
 }

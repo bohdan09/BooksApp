@@ -2,6 +2,11 @@ package com.books.app.presentation.screens.details
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -14,9 +19,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.HorizontalPager
@@ -25,6 +30,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -47,8 +54,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,11 +64,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import com.books.app.R
 import com.books.app.domain.model.Book
+import com.books.app.presentation.commoncomponents.BooksRow
+import com.books.app.presentation.commoncomponents.CacheAsyncImage
 import com.books.app.presentation.commoncomponents.HorizontalSpacer
 import com.books.app.presentation.commoncomponents.ShimmerBrush
+import com.books.app.ui.theme.NunitoSansFamily
+import com.books.app.ui.theme.Theme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.math.absoluteValue
@@ -78,8 +86,9 @@ fun DetailsScreen(
 ) {
     val viewModel: DetailsScreenViewModel =
         koinViewModel(parameters = { parametersOf(bookId, genre) })
-    val books by viewModel.booksState.collectAsStateWithLifecycle()
+    val booksByGenre by viewModel.booksByGenreState.collectAsStateWithLifecycle()
     val selectedBook by viewModel.selectedBookState.collectAsStateWithLifecycle()
+    val recommendationBooks by viewModel.recommendationBooksState.collectAsStateWithLifecycle()
 
     Box(
         Modifier
@@ -102,8 +111,9 @@ fun DetailsScreen(
         ) {
             DetailsScreenContent(
                 modifier = Modifier.padding(it),
-                books = books,
+                booksByGenre = booksByGenre,
                 selectedBook = selectedBook,
+                recommendationBooks = recommendationBooks,
                 setSelectedBook = viewModel::setSelectedBook
             )
         }
@@ -113,11 +123,7 @@ fun DetailsScreen(
 @Composable
 private fun TopBar(onBackClick: () -> Unit) = Box {
     IconButton(
-        modifier = Modifier.padding(
-            start = 16.dp,
-            top = 50.dp,
-            bottom = 8.dp
-        ),
+        modifier = Modifier.statusBarsPadding(),
         onClick = { onBackClick() }) {
         Image(
             painter = painterResource(id = R.drawable.back_arrow),
@@ -129,41 +135,44 @@ private fun TopBar(onBackClick: () -> Unit) = Box {
 @Composable
 fun DetailsScreenContent(
     modifier: Modifier = Modifier,
-    books: List<Book>,
+    booksByGenre: List<Book>,
     selectedBook: Book,
+    recommendationBooks: List<Book>,
     setSelectedBook: (bookId: String) -> Unit,
-) =
-    Column(modifier = modifier.fillMaxSize()) {
-        CarouselBlock(
-            books = if (books.isNotEmpty()) books else emptyList(),
-            selectedBook = selectedBook,
-            setSelectedBook = setSelectedBook
-        )
-        InfoBlock(book = selectedBook)
-    }
+) = Column(modifier = modifier.fillMaxSize()) {
+    CarouselBlock(
+        booksByGenre = booksByGenre.ifEmpty { emptyList() },
+        selectedBook = selectedBook,
+        setSelectedBook = setSelectedBook
+    )
+    InfoBlock(
+        selectedBook = selectedBook,
+        recommendationBooks = recommendationBooks
+    )
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CarouselBlock(
+private fun CarouselBlock(
     modifier: Modifier = Modifier,
-    books: List<Book>,
+    booksByGenre: List<Book>,
     selectedBook: Book,
     setSelectedBook: (bookId: String) -> Unit,
 ) =
     Box(modifier = modifier.wrapContentSize()) {
 
-        if (books.isNotEmpty()) {
+        if (booksByGenre.isNotEmpty()) {
             var pagerWidth by remember { mutableStateOf(0.dp) }
             var pagerItemWidth by remember { mutableStateOf(0.dp) }
 
             val density = LocalDensity.current
-            val pagerState = rememberPagerState(initialPage = 0) { books.size }
+            val pagerState = rememberPagerState(initialPage = 0) { booksByGenre.size }
 
             LaunchedEffect(key1 = selectedBook) {
-                pagerState.scrollToPage(books.indexOf(selectedBook))
+                pagerState.scrollToPage(booksByGenre.indexOf(selectedBook))
             }
             LaunchedEffect(key1 = pagerState.currentPage) {
-                setSelectedBook(books[pagerState.currentPage].id.toString())
+                setSelectedBook(booksByGenre[pagerState.currentPage].id.toString())
             }
 
             HorizontalPager(
@@ -171,7 +180,6 @@ fun CarouselBlock(
                 contentPadding = PaddingValues(
                     start = (pagerWidth - pagerItemWidth) / 2,
                     end = (pagerWidth - pagerItemWidth) / 2,
-                    top = 10.dp
                 ),
                 modifier = Modifier
                     .wrapContentWidth()
@@ -180,11 +188,12 @@ fun CarouselBlock(
                             it.size.width.toDp()
                         }
                     },
-                pageSpacing = 16.dp,
+                pageSpacing = -(5).dp,
             ) { page ->
                 CarouselItem(
-                    imageUrl = books[page].cover_url,
-                    title = books[page].name,
+                    imageUrl = booksByGenre[page].cover_url,
+                    title = booksByGenre[page].name,
+                    author = booksByGenre[page].author,
                     setPagerItemWidth = { pagerItemWidth = it },
                     pagerState = pagerState,
                     currentPage = page
@@ -200,14 +209,14 @@ private fun CarouselItem(
     modifier: Modifier = Modifier,
     imageUrl: String,
     title: String,
+    author: String,
     setPagerItemWidth: (Dp) -> Unit,
     pagerState: PagerState,
     currentPage: Int,
-) = Column(modifier = modifier.height(313.dp)) {
+) = Column(modifier = modifier.height(330.dp)) {
     val density = LocalDensity.current
 
-    AsyncImage(
-        model = imageUrl,
+    CacheAsyncImage(
         modifier = Modifier
             .size(200.dp, 250.dp)
             .onGloballyPositioned {
@@ -226,17 +235,26 @@ private fun CarouselItem(
                     stop = 0.8f,
                     fraction = pageOffset.coerceIn(0.1f, 1f)
                 )
+
+                scaleX = lerp(
+                    start = 0.95f,
+                    stop = 0.78f,
+                    fraction = pageOffset.coerceIn(0.1f, 0.7f)
+                )
             }
             .clip(RoundedCornerShape(16.dp))
             .background(brush = ShimmerBrush(targetValue = 1300f, showShimmer = true)),
+        imageUrl = imageUrl,
         contentScale = ContentScale.FillBounds,
-        contentDescription = null
     )
 
-    HorizontalSpacer(height = 16.dp)
+    HorizontalSpacer(height = 12.dp)
 
-    AnimatedVisibility(visible = pagerState.currentPage == currentPage) {
-
+    AnimatedVisibility(
+        visible = pagerState.currentPage == currentPage,
+        enter = fadeIn(animationSpec = tween(1000)) + expandVertically(),
+        exit = fadeOut(animationSpec = tween(1000)) + shrinkVertically()
+    ) {
         Column {
             Text(
                 modifier = Modifier.fillMaxWidth(),
@@ -245,24 +263,24 @@ private fun CarouselItem(
                 style = TextStyle(
                     fontSize = 20.sp,
                     lineHeight = 22.sp,
-                    fontFamily = FontFamily(Font(R.font.nunito_sans, weight = FontWeight.Bold)),
+                    fontFamily = NunitoSansFamily,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = TextUnit(-(0.408F), TextUnitType.Unspecified),
-                    color = Color(0xB3FFFFFF)
+                    color = Theme.colors.basic
                 )
             )
 
             Text(
                 modifier = Modifier.fillMaxWidth(),
-                text = title,
+                text = author,
                 textAlign = TextAlign.Center,
                 style = TextStyle(
                     fontSize = 14.sp,
                     lineHeight = 15.4.sp,
-                    fontFamily = FontFamily(Font(R.font.nunito_sans, weight = FontWeight.Bold)),
+                    fontFamily = NunitoSansFamily,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = TextUnit(-(0.408F), TextUnitType.Unspecified),
-                    color = Color(0xB3FFFFFF)
+                    color = Theme.colors.white80
                 )
             )
         }
@@ -270,47 +288,73 @@ private fun CarouselItem(
 }
 
 @Composable
-fun InfoBlock(modifier: Modifier = Modifier, book: Book) = Column(
-    modifier = modifier
-        .offset(y = (20).dp)
-        .clip(
-            RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-        )
-        .fillMaxSize()
-        .background(Color.White)
-        .verticalScroll(rememberScrollState())
+private fun InfoBlock(
+    modifier: Modifier = Modifier,
+    selectedBook: Book,
+    recommendationBooks: List<Book>,
 ) {
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 38.dp, vertical = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(40.dp)
-    ) {
-        StatisticItem(
-            title = stringResource(id = R.string.readers),
-            statisticValue = book.views
-        )
-        StatisticItem(
-            title = stringResource(id = R.string.likes),
-            statisticValue = book.likes
-        )
-        StatisticItem(
-            title = stringResource(id = R.string.quotes),
-            statisticValue = book.quotes
-        )
-        StatisticItem(
-            title = stringResource(id = R.string.genre),
-            statisticValue = book.genre
-        )
+    val scrollState = rememberScrollState()
+    LaunchedEffect(key1 = selectedBook) {
+        scrollState.animateScrollTo(0)
     }
+    Column(
+        modifier = modifier
+            .clip(
+                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            )
+            .fillMaxSize()
+            .background(Color.White)
+            .verticalScroll(scrollState)
+    ) {
 
-    SummeryItem(summery = book.summary)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 38.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.Absolute.SpaceAround
+        ) {
+            StatisticItem(
+                title = stringResource(id = R.string.readers),
+                statisticValue = selectedBook.views
+            )
+            StatisticItem(
+                title = stringResource(id = R.string.likes),
+                statisticValue = selectedBook.likes
+            )
+            StatisticItem(
+                title = stringResource(id = R.string.quotes),
+                statisticValue = selectedBook.quotes
+            )
+            StatisticItem(
+                title = stringResource(id = R.string.genre),
+                statisticValue = selectedBook.genre
+            )
+        }
+
+        SummeryItem(summery = selectedBook.summary)
+
+        YouWillAlsoLikeItem(recommendationBooks = recommendationBooks)
+
+        ReadNowButton()
+    }
 }
 
-@Composable
-private fun YouWillAlsoLikeItem(summery: String) = Column {
 
+@Composable
+private fun YouWillAlsoLikeItem(recommendationBooks: List<Book>) = Column {
+    HeaderText(
+        modifier = Modifier
+            .padding(horizontal = 16.dp),
+        text = stringResource(id = R.string.also_like)
+    )
+
+    HorizontalSpacer(height = 16.dp)
+
+    BooksRow(
+        books = recommendationBooks,
+        itemIsClickable = false,
+        booksNameTextColor = Theme.colors.mineShaft
+    )
 }
 
 @Composable
@@ -325,22 +369,12 @@ private fun SummeryItem(summery: String) = Column(
     HorizontalDivider(
         modifier = Modifier.fillMaxWidth(),
         thickness = 1.dp,
-        color = Color(0xffD9D5D6)
+        color = Theme.colors.alto
     )
 
     HorizontalSpacer(height = 16.dp)
 
-    Text(
-        text = stringResource(id = R.string.summary),
-        style = TextStyle(
-            fontSize = 20.sp,
-            lineHeight = 22.sp,
-            fontFamily = FontFamily(Font(R.font.nunito_sans, weight = FontWeight.Bold)),
-            fontWeight = FontWeight.Bold,
-            letterSpacing = TextUnit(-(0.408F), TextUnitType.Unspecified),
-            color = Color.Black
-        )
-    )
+    HeaderText(text = stringResource(id = R.string.summary))
 
     HorizontalSpacer(height = 8.dp)
 
@@ -349,7 +383,7 @@ private fun SummeryItem(summery: String) = Column(
         style = TextStyle(
             fontSize = 14.sp,
             lineHeight = 16.8.sp,
-            fontFamily = FontFamily(Font(R.font.nunito_sans, weight = FontWeight.SemiBold)),
+            fontFamily = NunitoSansFamily,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = TextUnit((0.150F), TextUnitType.Unspecified),
             color = Color.Black
@@ -361,44 +395,80 @@ private fun SummeryItem(summery: String) = Column(
     HorizontalDivider(
         modifier = Modifier.fillMaxWidth(),
         thickness = 1.dp,
-        color = Color(0xffD9D5D6)
+        color = Theme.colors.alto
     )
 
     HorizontalSpacer(height = 16.dp)
 }
 
 @Composable
-private fun StatisticItem(title: String, statisticValue: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+private fun StatisticItem(title: String, statisticValue: String) = Column(
+    horizontalAlignment = Alignment.CenterHorizontally
+) {
+    Text(
+        text = statisticValue,
+        textAlign = TextAlign.Center,
+        style = TextStyle(
+            fontSize = 18.sp,
+            lineHeight = 22.sp,
+            fontFamily = NunitoSansFamily,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = TextUnit(-(0.408F), TextUnitType.Unspecified),
+            color = Color.Black
+        ),
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 1
+    )
+
+    Text(
+        text = title,
+        textAlign = TextAlign.Center,
+        style = TextStyle(
+            fontSize = 12.sp,
+            lineHeight = 13.2.sp,
+            fontFamily = NunitoSansFamily,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = TextUnit(-(0.408F), TextUnitType.Unspecified),
+            color = Theme.colors.alto
+        )
+    )
+}
+
+@Composable
+private fun HeaderText(modifier: Modifier = Modifier, text: String) = Text(
+    modifier = modifier,
+    text = text,
+    style = TextStyle(
+        fontSize = 20.sp,
+        lineHeight = 22.sp,
+        fontFamily = NunitoSansFamily,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = TextUnit(-(0.408F), TextUnitType.Unspecified),
+        color = Color.Black
+    )
+)
+
+@Composable
+fun ReadNowButton(modifier: Modifier = Modifier) =
+    Button(
+        modifier = modifier
+            .padding(horizontal = 49.dp, vertical = 24.dp)
+            .fillMaxWidth()
+            .height(48.dp),
+        shape = RoundedCornerShape(30.dp),
+        onClick = {
+            // no-op
+        },
+        colors = ButtonDefaults.buttonColors(Theme.colors.pink)
     ) {
         Text(
-            text = statisticValue,
-            textAlign = TextAlign.Center,
+            text = stringResource(id = R.string.read_now),
             style = TextStyle(
-                fontSize = 18.sp,
-                lineHeight = 22.sp,
-                fontFamily = FontFamily(Font(R.font.nunito_sans, weight = FontWeight.Bold)),
-                fontWeight = FontWeight.Bold,
-                letterSpacing = TextUnit(-(0.408F), TextUnitType.Unspecified),
-                color = Color.Black
-            ),
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1
-        )
-
-        Text(
-            text = title,
-            textAlign = TextAlign.Center,
-            style = TextStyle(
-                fontSize = 12.sp,
-                lineHeight = 13.2.sp,
-                fontFamily = FontFamily(Font(R.font.nunito_sans, weight = FontWeight.SemiBold)),
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = TextUnit(-(0.408F), TextUnitType.Unspecified),
-                color = Color(0xffD9D5D6)
+                fontSize = 16.sp,
+                lineHeight = 16.sp,
+                fontFamily = NunitoSansFamily,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
             )
         )
-
     }
-}

@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">BooksApp</string>
 
+    <!--    Splash screen -->
+    <string name="book_app">Book App</string>
+    <string name="welcome_to_book_app">Welcome to Book App</string>
     <!--    Main screen -->
     <string name="new_arrivals">New Arrivals</string>
     <string name="romance">Romance</string>

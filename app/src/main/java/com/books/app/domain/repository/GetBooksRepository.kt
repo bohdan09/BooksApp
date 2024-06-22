@@ -10,5 +10,7 @@ interface GetBooksRepository {
 
     fun getBooksByGenre(genre: String): Flow<List<Book>>
 
-    fun getBooksByBookId(bookId: String): Flow<Book>
+    fun getBookByBookId(bookId: String): Flow<Book>
+
+    fun getRecommendationBooks(): Flow<List<Book>>
 }

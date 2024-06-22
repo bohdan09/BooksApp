@@ -18,7 +18,7 @@ open class BaseViewModel(coroutineContextProvider: CoroutineContextProvider) : V
 
     init {
         viewModelScope.coroutineContext + CoroutineExceptionHandler(
-            handler = { context, exception ->
+            handler = { _, exception ->
                 Log.e(
                     this@BaseViewModel.TAG,
                     "CoroutineExceptionHandler handled exception in ${this@BaseViewModel}. Exception: ${exception.stackTraceToString()}"
