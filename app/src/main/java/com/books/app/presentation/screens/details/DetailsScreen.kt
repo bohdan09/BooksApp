@@ -213,7 +213,7 @@ private fun CarouselItem(
     setPagerItemWidth: (Dp) -> Unit,
     pagerState: PagerState,
     currentPage: Int,
-) = Column(modifier = modifier.height(330.dp)) {
+) = Column(modifier = modifier.height(340.dp)) {
     val density = LocalDensity.current
 
     CacheAsyncImage(
@@ -245,7 +245,7 @@ private fun CarouselItem(
             .clip(RoundedCornerShape(16.dp))
             .background(brush = ShimmerBrush(targetValue = 1300f, showShimmer = true)),
         imageUrl = imageUrl,
-        contentScale = ContentScale.FillBounds,
+        contentScale = ContentScale.Crop,
     )
 
     HorizontalSpacer(height = 12.dp)
@@ -267,7 +267,9 @@ private fun CarouselItem(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = TextUnit(-(0.408F), TextUnitType.Unspecified),
                     color = Theme.colors.basic
-                )
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
 
             Text(
