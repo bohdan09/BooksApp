@@ -99,7 +99,7 @@ fun DetailsScreen(
         Image(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(440.dp),
+                .height(490.dp),
             contentScale = ContentScale.Crop,
             painter = painterResource(id = R.drawable.details_background),
             contentDescription = null
